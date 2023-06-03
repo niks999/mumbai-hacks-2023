@@ -9,9 +9,14 @@ class User(Base):
     __tablename__ = "user"
 
     id = Column(Integer, primary_key=True)
-    mobile_number = Column(String(20), unique=True, nullable=False)
-    name = Column(String(100))
-    email = Column(String(100), unique=True)
+    mobile_number = Column(String(255), unique=True, nullable=False)
+    name = Column(String(255))
+    email = Column(String(255), unique=True)
+    aadhaar_number = Column(String(255), unique=True)
+    profile_image = Column(Text)
+    is_moderator = Column(Boolean, default=False)
+    credits_earned = Column(Numeric(10, 2), default=0)
+    credits_left = Column(Numeric(10, 2), default=0)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
@@ -26,105 +31,95 @@ class User(Base):
             "mobile_number": self.mobile_number,
             "name": self.name,
             "email": self.email,
+            "aadhaar_number": self.aadhaar_number,
+            "profile_image": self.profile_image,
+            "is_moderator": self.is_moderator,
+            "credits_earned": self.credits_earned,
+            "credits_left": self.credits_left,
+            "created_at": self.created_at,
+        }
+
+
+class Event(Base):
+    __tablename__ = "event"
+
+    id = Column(Integer, primary_key=True)
+    title = Column(String(255))
+    description = Column(Text, nullable=False)
+    area_name = Column(String(255), nullable=False)
+    status = Column(String(255), nullable=False)
+    category = Column(String(255), nullable=False)
+    created_by = Column(String(255), nullable=False)
+    reward_credits = Column(Numeric(10, 2), nullable=False)
+    moderator_id = Column(Integer)
+    event_timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
+    max_participants = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    def __init__(
+        self,
+        description,
+        area_name,
+        status,
+        category,
+        created_by,
+        reward_credits,
+        event_timestamp,
+        max_participants,
+    ):
+        self.description = description
+        self.area_name = area_name
+        self.status = status
+        self.category = category
+        self.created_by = created_by
+        self.reward_credits = reward_credits
+        self.event_timestamp = event_timestamp
+        self.max_participants = max_participants
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "area_name": self.area_name,
+            "status": self.status,
+            "category": self.category,
+            "created_by": self.created_by,
+            "reward_credits": self.reward_credits,
+            "moderator_id": self.moderator_id,
+            "event_timestamp": self.event_timestamp,
+            "max_participants": self.max_participants,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
 
 
-class Contractor(Base):
-    __tablename__ = "contractor"
+class EventEnrolment(Base):
+    __tablename__ = "event_enrolment"
 
     id = Column(Integer, primary_key=True)
-    mobile_number = Column(String(20), unique=True, nullable=False)
-    name = Column(String(100))
-    registration_number = Column(String(50), unique=True, nullable=False)
-    rating = Column(Numeric(10, 2), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
-    )
-
-    def __init__(self, mobile_number):
-        self.mobile_number = mobile_number
-
-
-class Issue(Base):
-    __tablename__ = "issue"
-
-    id = Column(Integer, primary_key=True)
-    description = Column(Text, nullable=False)
-    latitude = Column(Numeric(10, 2), nullable=False)
-    longitude = Column(Numeric(10, 2), nullable=False)
-    status = Column(String(50), nullable=False)
-    category = Column(String(50), nullable=False)
-    created_by_user_id = Column(Integer, nullable=False)
-    contractor_id = Column(Integer)
-    quotation_amount = Column(Numeric(10, 2), nullable=True)
-    quotation_duration = Column(Integer, nullable=True)
-    raised_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    funding_expiry_at = Column(DateTime)
-    work_deadline = Column(DateTime)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
-    )
-
-    def __init__(self, description, latitude, longitude, status, category, created_by_user_id):
-        self.description = description
-        self.latitude = latitude
-        self.longitude = longitude
-        self.status = status
-        self.category = category
-        self.created_by_user_id = created_by_user_id
-
-
-class Image(Base):
-    __tablename__ = "image"
-
-    id = Column(Integer, primary_key=True)
-    issue_id = Column(Integer, nullable=False)
-    image_url = Column(String(200), nullable=False)
-    user_id = Column(Integer)
-    contractor_id = Column(Integer)
-    comment = Column(Text)
-    uploaded_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
-    )
-
-    def __init__(self, issue_id, image_url, user_id, contractor_id, comment):
-        self.issue_id = issue_id
-        self.image_url = image_url
-        self.user_id = user_id
-        self.contractor_id = contractor_id
-        self.comment = comment
-
-
-class Vote(Base):
-    __tablename__ = "vote"
-
-    id = Column(Integer, primary_key=True)
-    issue_id = Column(Integer, nullable=False)
+    event_id = Column(Integer, nullable=False)
     user_id = Column(Integer, nullable=False)
-    vote_type = Column(String(20), nullable=False)
+    enrolled_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
 
-    def __init__(self, issue_id, user_id, vote_type):
-        self.issue_id = issue_id
+    def __init__(self, event_id, user_id):
+        self.event_id = event_id
         self.user_id = user_id
-        self.vote_type = vote_type
 
 
-class IssueHistory(Base):
-    __tablename__ = "issue_history"
+class EventHistory(Base):
+    __tablename__ = "event_history"
 
     id = Column(Integer, primary_key=True)
-    issue_id = Column(Integer, nullable=False)
-    status = Column(String(50), nullable=False)
+    event_id = Column(Integer, nullable=False)
+    status = Column(String(255), nullable=False)
     changed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
@@ -136,21 +131,20 @@ class IssueHistory(Base):
         self.status = status
 
 
-class Contribution(Base):
-    __tablename__ = "contribution"
+class CreditHistory(Base):
+    __tablename__ = "credit_history"
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, nullable=False)
+    event_id = Column(Integer, nullable=False)
     amount = Column(Numeric(10, 2), nullable=False)
-    issue_id = Column(Integer, nullable=False)
-    contributed_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    is_refunded = Column(Boolean, default=False, nullable=False)
+    credited_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
 
-    def __init__(self, user_id, amount, issue_id):
+    def __init__(self, user_id, event_id, amount):
         self.user_id = user_id
+        self.event_id = event_id
         self.amount = amount
-        self.issue_id = issue_id

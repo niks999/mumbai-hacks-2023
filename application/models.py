@@ -14,7 +14,6 @@ class User(Base):
     email = Column(String(255), unique=True)
     aadhaar_number = Column(String(255), unique=True)
     profile_image = Column(Text)
-    is_moderator = Column(Boolean, default=False)
     credits_earned = Column(Numeric(10, 2), default=0)
     credits_left = Column(Numeric(10, 2), default=0)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -33,18 +32,49 @@ class User(Base):
             "email": self.email,
             "aadhaar_number": self.aadhaar_number,
             "profile_image": self.profile_image,
-            "is_moderator": self.is_moderator,
             "credits_earned": self.credits_earned,
             "credits_left": self.credits_left,
             "created_at": self.created_at,
         }
 
 
+class Moderator(Base):
+    __tablename__ = "moderator"
+
+    id = Column(Integer, primary_key=True)
+    mobile_number = Column(String(255), unique=True, nullable=False)
+    name = Column(String(255))
+    email = Column(String(255), unique=True)
+    aadhaar_number = Column(String(255), unique=True)
+    profile_image = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    def __init__(self, mobile_number):
+        self.mobile_number = mobile_number
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "mobile_number": self.mobile_number,
+            "name": self.name,
+            "email": self.email,
+            "aadhaar_number": self.aadhaar_number,
+            "profile_image": self.profile_image,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+
 class Event(Base):
     __tablename__ = "event"
 
+    STATUS_CREATED = "CREATED"
+
     id = Column(Integer, primary_key=True)
-    title = Column(String(255))
+    title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     area_name = Column(String(255), nullable=False)
     status = Column(String(255), nullable=False)
@@ -61,23 +91,25 @@ class Event(Base):
 
     def __init__(
         self,
+        title,
         description,
         area_name,
-        status,
         category,
         created_by,
         reward_credits,
         event_timestamp,
         max_participants,
+        status,
     ):
+        self.title = title
         self.description = description
         self.area_name = area_name
-        self.status = status
         self.category = category
         self.created_by = created_by
         self.reward_credits = reward_credits
         self.event_timestamp = event_timestamp
         self.max_participants = max_participants
+        self.status = status
 
     def to_dict(self):
         return {
@@ -126,8 +158,8 @@ class EventHistory(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
 
-    def __init__(self, issue_id, status):
-        self.issue_id = issue_id
+    def __init__(self, event_id, status):
+        self.event_id = event_id
         self.status = status
 
 

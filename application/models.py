@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String, Text
+from sqlalchemy import Column, DateTime, Integer, Numeric, String, Text
 
 from application.db import Base
 
@@ -34,7 +34,6 @@ class User(Base):
             "profile_image": self.profile_image,
             "credits_earned": self.credits_earned,
             "credits_left": self.credits_left,
-            "created_at": self.created_at,
         }
 
 
@@ -63,8 +62,6 @@ class Moderator(Base):
             "email": self.email,
             "aadhaar_number": self.aadhaar_number,
             "profile_image": self.profile_image,
-            "created_at": self.created_at,
-            "updated_at": self.updated_at,
         }
 
 
@@ -72,6 +69,11 @@ class Event(Base):
     __tablename__ = "event"
 
     STATUS_CREATED = "CREATED"
+    STATUS_STARTED = "STARTED"
+    STATUS_COMPLETED = "COMPLETED"
+
+    CATEGORY_TREE_PLANTATION = "TREE_PLANTATION"
+    CATEGORY_CLEANUP_DRIVE = "CLEANUP_DRIVE"
 
     id = Column(Integer, primary_key=True)
     title = Column(String(255), nullable=False)
@@ -81,7 +83,7 @@ class Event(Base):
     category = Column(String(255), nullable=False)
     created_by = Column(String(255), nullable=False)
     reward_credits = Column(Numeric(10, 2), nullable=False)
-    moderator_id = Column(Integer)
+    moderator_id = Column(Integer, foreign_key="moderator.id")
     event_timestamp = Column(DateTime, nullable=False, default=datetime.utcnow)
     max_participants = Column(Integer, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -100,6 +102,7 @@ class Event(Base):
         event_timestamp,
         max_participants,
         status,
+        moderator_id,
     ):
         self.title = title
         self.description = description
@@ -110,6 +113,7 @@ class Event(Base):
         self.event_timestamp = event_timestamp
         self.max_participants = max_participants
         self.status = status
+        self.moderator_id = moderator_id
 
     def to_dict(self):
         return {

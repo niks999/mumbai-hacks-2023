@@ -16,6 +16,7 @@ class EventService:
         event_timestamp,
         max_participants,
     ):
+        moderator = Moderator.query.first()
         event = Event(
             title=title,
             description=description,
@@ -26,6 +27,7 @@ class EventService:
             event_timestamp=event_timestamp,
             max_participants=max_participants,
             status=Event.STATUS_CREATED,
+            moderator_id=moderator.id,
         )
         event.save()
 
@@ -46,6 +48,13 @@ class EventService:
         event = Event.query.get(event_id)
         if not event:
             return None
+
+        if status not in [Event.STATUS_CREATED, Event.STATUS_STARTED, Event.STATUS_COMPLETED]:
+            return event
+
+        if status == event.status:
+            return event
+
         event.status = status
         event.save()
 
@@ -123,6 +132,11 @@ class UserService:
         user.save()
 
         return user
+
+    @staticmethod
+    def leaderboard():
+        users = User.query.order_by(User.credits_earned.desc()).all()
+        return {"users": [user.to_dict() for user in users]}
 
 
 class ModeratorService:

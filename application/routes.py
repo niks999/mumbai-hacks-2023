@@ -97,3 +97,8 @@ def verify_otp():
         if not user:
             return {}
         return user.to_dict()
+
+
+@bp.route("/leaderboard", methods=["GET"])
+def leaderboard():
+    return {"leaderboard": UserService.leaderboard()}

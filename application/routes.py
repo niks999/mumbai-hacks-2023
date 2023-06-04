@@ -4,6 +4,7 @@ from flask import Blueprint, request
 
 from application.db import init_schema
 from application.services import EventService, ModeratorService, UserService
+from application.utils import error_response, success_response
 
 bp = Blueprint("routes", __name__)
 
@@ -11,7 +12,7 @@ bp = Blueprint("routes", __name__)
 @bp.route("/init-db", methods=["POST"])
 def init_db():
     init_schema()
-    return {"status": "SUCCESS", "message": "Database initialized"}
+    return success_response("Database initialized")
 
 
 @bp.route("/events", methods=["POST"])
@@ -38,6 +39,8 @@ def get_events():
 @bp.route("/events/<int:event_id>", methods=["GET"])
 def get_event(event_id):
     event = EventService.get_event(event_id)
+    if not event:
+        return error_response("Event not found")
     return event.to_dict()
 
 
@@ -59,8 +62,8 @@ def remove_enrolment(event_id):
 
 @bp.route("/users/login", methods=["POST"])
 def user_login():
-    user = UserService.login(request.json["mobile_number"])
-    return {"status": "SUCCESS", "message": "OTP sent to mobile number"}
+    UserService.login(request.json["mobile_number"])
+    return success_response("OTP sent to mobile number")
 
 
 @bp.route("/users/<int:user_id>", methods=["GET"])
@@ -73,30 +76,28 @@ def get_user(user_id):
 def credit_user(user_id):
     event_id = request.json["event_id"]
     amount = request.json["amount"]
-    user = UserService.credit(user_id, event_id, amount)
-    return user.to_dict()
+    return UserService.credit(user_id, event_id, amount)
 
 
 @bp.route("/moderators/login", methods=["POST"])
 def moderator_login():
-    moderator = ModeratorService.login(request.json["mobile_number"])
-    return {"status": "SUCCESS", "message": "OTP sent to mobile number"}
+    ModeratorService.login(request.json["mobile_number"])
+    return success_response("OTP sent to mobile number")
 
 
 @bp.route("/verify-otp", methods=["POST"])
 def verify_otp():
     user_id = request.json.get("user_id")
     moderator_id = request.json.get("moderator_id")
+    user = None
     if moderator_id:
-        moderator = ModeratorService.get_details(moderator_id)
-        if not moderator:
-            return {}
-        return moderator.to_dict()
+        user = ModeratorService.get_details(moderator_id)
     elif user_id:
         user = UserService.get_details(user_id)
-        if not user:
-            return {}
-        return user.to_dict()
+    if not user:
+        return error_response("Invalid user_id / moderator_id")
+
+    return user.to_dict()
 
 
 @bp.route("/leaderboard", methods=["GET"])

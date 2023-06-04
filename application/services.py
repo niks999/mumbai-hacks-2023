@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from application import db
 from application.models import CreditHistory, Event, EventEnrolment, EventHistory, Moderator, User
+from application.utils import error_response, success_response
 
 
 class EventService:
@@ -49,7 +50,10 @@ class EventService:
         if not event:
             return None
 
-        if status not in [Event.STATUS_CREATED, Event.STATUS_STARTED, Event.STATUS_COMPLETED]:
+        if event.status == Event.STATUS_COMPLETED:
+            return event
+
+        if status not in [Event.STATUS_STARTED, Event.STATUS_COMPLETED]:
             return event
 
         if status == event.status:
@@ -66,30 +70,33 @@ class EventService:
     def enroll_in_event(event_id, user_id):
         event = Event.query.get(event_id)
         if not event:
-            return None
+            return error_response("Event not found")
+
+        if event.status != Event.STATUS_CREATED:
+            return error_response("Event not open for enrolment")
 
         user = User.query.get(user_id)
         if not user:
-            return None
+            return error_response("User not found")
 
         enrolment = EventEnrolment.query.filter_by(event_id=event_id, user_id=user_id).first()
         if enrolment:
-            return {"status": "SUCCESS", "message": "Already enrolled in event"}
+            return error_response("Already enrolled in event")
 
         enrolment = EventEnrolment(event_id=event_id, user_id=user_id)
         enrolment.save()
 
-        return {"status": "SUCCESS", "message": "Enrolled in event"}
+        return success_response("Enrolled in event")
 
     @staticmethod
     def remove_enrolment(event_id, user_id):
         enrolment = EventEnrolment.query.filter_by(event_id=event_id, user_id=user_id).first()
         if not enrolment:
-            return {"status": "SUCCESS", "message": "Not enrolled in event"}
+            return error_response("Not enrolled in event")
 
         db.session.delete(enrolment)
         db.session.commit()
-        return {"status": "SUCCESS", "message": "Removed enrolment"}
+        return success_response("Removed enrolment")
 
     @staticmethod
     def update_history(event):
@@ -110,20 +117,25 @@ class UserService:
 
     @staticmethod
     def get_details(user_id):
-        user = User.query.filter_by(id=user_id).first()
-        if not user:
-            return None
-        return user
+        return User.query.filter_by(id=user_id).first()
 
     @staticmethod
     def credit(user_id, event_id, amount):
         user = User.query.get(user_id)
         if not user:
-            return None
+            return error_response("User not found")
+
+        enrolment = EventEnrolment.query.filter_by(event_id=event_id, user_id=user_id).first()
+        if not enrolment:
+            return error_response("Not enrolled in event")
+
+        event = Event.query.get(event_id)
+        if event.status != Event.STATUS_STARTED:
+            return error_response("Event not in a valid state")
 
         history = CreditHistory.query.filter_by(user_id=user_id, event_id=event_id).first()
         if history:
-            return user
+            return error_response("Already credited for event")
 
         CreditHistory(user_id=user_id, event_id=event_id, amount=amount).save()
 
@@ -131,7 +143,7 @@ class UserService:
         user.credits_left = round(user.credits_left + Decimal(amount), 2)
         user.save()
 
-        return user
+        return success_response(f"Successfully credited Rs. {amount} to user")
 
     @staticmethod
     def leaderboard():
@@ -153,6 +165,4 @@ class ModeratorService:
     @staticmethod
     def get_details(moderator_id):
         moderator = Moderator.query.filter_by(id=moderator_id).first()
-        if not moderator:
-            return None
         return moderator

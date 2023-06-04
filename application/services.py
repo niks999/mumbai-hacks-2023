@@ -136,7 +136,7 @@ class UserService:
     @staticmethod
     def leaderboard():
         users = User.query.order_by(User.credits_earned.desc()).all()
-        return {"users": [user.to_dict() for user in users]}
+        return [user.to_dict() for user in users]
 
 
 class ModeratorService:
